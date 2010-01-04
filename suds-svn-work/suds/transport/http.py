@@ -48,6 +48,8 @@ class SUDSHTTPRedirectHandler(u2.HTTPRedirectHandler):
                               if k.lower() not in ("content-length", "content-type")
                              )
             log.debug("Redirecting to %s", newurl)
+            log.debug("Sending data: %s", req.data)
+            log.debug("Sending headers: %s", newheaders)
             return u2.Request(newurl,
                               data=req.data, # here we pass the original data
                               headers=newheaders,
@@ -114,6 +116,7 @@ class HttpTransport(Transport):
             self.__addcookies(u2request)
             self.__setproxy(url, u2request)
             request.headers.update(u2request.headers)
+            u2request.headers['User-Agent'] = "602"
             log.debug('sending:\n%s', request)
             if self.options.proxy:
               if not u2request._tunnel_host and u2request.origin_req_host != u2request.host:

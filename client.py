@@ -8,12 +8,12 @@ which is responsible for all communication with the DS server..
 # more info here: https://bugzilla.redhat.com/show_bug.cgi?id=537822
 # the workaround breaks things on FreeBSD
 import sys, os
-if not sys.platform.startswith("freebsd") and not sys.platform.startswith("darwin"):
-  try:
-    import _ssl
-    _ssl.PROTOCOL_SSLv23 = _ssl.PROTOCOL_SSLv3
-  except:
-    pass
+#if not sys.platform.startswith("freebsd") and not sys.platform.startswith("darwin"):
+#  try:
+#    import _ssl
+#    _ssl.PROTOCOL_SSLv23 = _ssl.PROTOCOL_SSLv3
+#  except:
+#    pass
 # / end of work-around
 
 # suds does not work properly without this
@@ -32,6 +32,48 @@ import models
 
 import certs.pem_decoder
 
+### temp
+
+import urllib2
+import httplib
+from suds.transport.http import HttpAuthenticated, HttpTransport
+AuthParent = HttpTransport 
+#SUDS Client Auth solution
+class HttpClientAuthTransport(AuthParent):
+    def __init__(self, key, cert, **kwargs):
+        AuthParent.__init__(self, **kwargs)
+        to_remove = []
+        for h in self.urlopener.handlers:
+          if h.__class__.__name__ == "HTTPSHandler":
+            to_remove.append(h)
+        print to_remove
+        for h in to_remove:
+          self.urlopener.handlers.remove(h)
+          self.urlopener.handle_open['https'].remove(h)
+        self.urlopener.add_handler(HTTPSClientAuthHandler(key, cert))
+#HTTPS Client Auth solution for urllib2, inspired by
+# http://bugs.python.org/issue3466
+# and improved by David Norton of Three Pillar Software. In this
+# implementation, we use properties passed in rather than static module
+# fields.
+class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
+    def __init__(self, key, cert):
+        urllib2.HTTPSHandler.__init__(self)
+        self.key = key
+        self.cert = cert
+        self.set_http_debuglevel(100)
+    def https_open(self, req):
+        #Rather than pass in a reference to a connection class, we pass in
+        # a reference to a function which, for all intents and purposes,
+        # will behave as a constructor
+        print "AAA"
+        return self.do_open(self.getConnection, req)
+    def getConnection(self, host, **kwargs):
+        print "BBBB"
+        return httplib.HTTPSConnection(host, key_file=self.key, cert_file=self.cert, strict=False, **kwargs)
+
+### // end of temp
+
 class Dispatcher(object):
   """
   DS splits its functionality between several parts. These have different URLs
@@ -48,7 +90,10 @@ class Dispatcher(object):
     if self.proxy:
       transport = HttpAuthenticated(username=self.ds_client.login, password=self.ds_client.password, proxy={'https':self.proxy})
     else:
-      transport = HttpAuthenticated(username=self.ds_client.login, password=self.ds_client.password)
+      if self.ds_client.login_method == "username":
+        transport = HttpAuthenticated(username=self.ds_client.login, password=self.ds_client.password)
+      elif self.ds_client.login_method == "certificate":
+        transport = HttpClientAuthTransport(self.ds_client.key_file, self.ds_client.cert_file, username=self.ds_client.login, password=self.ds_client.password)
     if not self.soap_url:
       self.soap_client = SudsClient(self.wsdl_url, transport=transport)
     else:
@@ -314,7 +359,8 @@ class Client(object):
                            }
 
   def __init__(self, login=None, password=None, soap_url=None, test_environment=None,
-               login_method="username", proxy=None, trusted_certs_dir=None):
+               login_method="username", key_file=None, cert_file=None,
+               proxy=None, trusted_certs_dir=None):
     """
     if soap_url is not given and test_environment is given, soap_url will be
     infered from the value of test_environment based on what is set in test2soap_url;
@@ -337,6 +383,8 @@ class Client(object):
     self._dispatchers = {}
     self.proxy = proxy
     self.trusted_certs_dir = trusted_certs_dir
+    self.key_file = key_file
+    self.cert_file = cert_file
 
 
   def __getattr__(self, name):
@@ -403,3 +451,26 @@ class Reply(object):
   def __unicode__(self):
     return "Reply: StatusCode: %s; DataType: %s" % (self.status.dmStatusCode, data.__class__.__name__)
 
+
+if __name__ == "__main__":
+  import logging
+  logging.basicConfig(level=logging.INFO)
+  logging.getLogger('suds.transport.http').setLevel(logging.DEBUG)
+  #logging.getLogger('suds.transport.http').setLevel(logging.DEBUG)
+  #cl = Client(login_method="username",
+  #            login="kvm6ra",
+  #            password="Schr8ne4ka",
+  #            test_environment=True)
+  #print cl.GetOwnerInfoFromLogin()
+  #aaa  
+  cl = Client(login_method="certificate",
+              login="kvm6ra",
+              password="Schr8ne4ka",
+              key_file=None, #os.path.abspath("beda-keyfile.pem"),
+              cert_file=os.path.abspath("keys.pem"),
+              test_environment=True)
+  info = models.dbOwnerInfo()
+  info.dbType = "FO"
+  info.dbID = u"kvm6ra"
+  rep = cl.FindDataBox(info) #.GetListOfReceivedMessages()
+  print rep
