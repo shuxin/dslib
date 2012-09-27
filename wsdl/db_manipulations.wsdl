@@ -2,12 +2,13 @@
 <!--  *********************************************************************
      WSDL pro služby manipulujícími s datovými schránkami 
      
-                          verze 2.7  
+                          verze 2.16  
       *********************************************************************                    
 Seznam služeb: 
 ==============
   FindDataBox
   CheckDataBox
+  GetDataBoxList
                            
   CreateDataBox
   DeleteDataBox
@@ -26,6 +27,7 @@ Seznam služeb:
   Activate
   CreateDataBoxPFOInfo
   GetDataBoxUsers
+  ChangeDataBoxesType
   
                           
  změny:
@@ -39,11 +41,11 @@ Seznam služeb:
                          - přidána dvojice služeb [Set|Clear]EffectiveOVM
   11.6.2009  verze 2.1   - přidána WS Activate
                          - přidána WS CreateDataBoxPFOInfo
-  23.6.2009  verze 2.2   - přidána dvojice služeb [Set|Clear]Vault
-  1.10.2009  verze 2.5   - zrušena dvojice služeb [Set|Clear]Vault
-  1.11.2009  verze 2.6   - 
   1.1.2010   verze 2.7   - přesunuta WS GetDataBoxUsers ze zrušeného db_supplementary.wsdl                     
- ************************************************************************ -->
+ 11.10.2010  verze 2.10  - změna URL v důsledku přechodu na Basic autentizaci
+                         - přidána WS GetDataBoxList
+ 06.03.2012  verze 2.16  - přidána WS ChangeBoxesType                            
+************************************************************************ -->
 
 <definitions name="ISDS_db" targetNamespace="http://isds.czechpoint.cz/v20" 
                                   xmlns="http://schemas.xmlsoap.org/wsdl/" 
@@ -191,7 +193,21 @@ Seznam služeb:
     <part name="parameter" element="tns:GetDataBoxUsersResponse" />        
   </message>
 
-  <!-- ******************************************************************* -->
+  <message name="GetDataBoxListRequest">
+    <part name="parameter" element="tns:GetDataBoxList" />        
+  </message>
+  <message name="GetDataBoxListResponse">
+    <part name="parameter" element="tns:GetDataBoxListResponse" />        
+  </message>
+
+  <message name="ChangeBoxesTypeRequest">
+    <part name="parameter" element="tns:ChangeBoxesType" />        
+  </message>
+  <message name="ChangeBoxesTypeResponse">
+    <part name="parameter" element="tns:ChangeBoxesTypeResponse" />        
+  </message>
+
+ <!-- ******************************************************************* -->
   <portType name="DataBoxManipulationPortType">
     <operation name="FindDataBox">
       <input  message="tns:FindDataBoxRequest"/>
@@ -288,6 +304,15 @@ Seznam služeb:
       <output message="tns:GetDataBoxUsersResponse"/>
     </operation>
 
+    <operation name="GetDataBoxList">
+      <input  message="tns:GetDataBoxListRequest"/>
+      <output message="tns:GetDataBoxListResponse"/>
+    </operation>
+
+    <operation name="ChangeBoxesType">
+      <input  message="tns:ChangeBoxesTypeRequest"/>
+      <output message="tns:ChangeBoxesTypeResponse"/>
+    </operation>
   </portType>
 
   <!-- ******************************************************************* -->
@@ -483,12 +508,31 @@ Seznam služeb:
       </output>
     </operation>
 
+    <operation name="GetDataBoxList">
+      <soap:operation soapAction="" />
+      <input>
+        <soap:body use="literal" />
+      </input>
+      <output>
+        <soap:body use="literal" />
+      </output>
+    </operation>
+
+    <operation name="ChangeBoxesType">
+      <soap:operation soapAction="" />
+      <input>
+        <soap:body use="literal" />
+      </input>
+      <output>
+        <soap:body use="literal" />
+      </output>
+    </operation>
   </binding>
 
   <!-- ******************************************************************* -->
   <service name="DataBoxManipulation">
     <port name="DataBoxManipulationPortType" binding="tns:DataBoxManipulationBinding">
-      <soap:address location="https://www.mojedatovaschranka.cz/DS/DsManage"/>
+      <soap:address location="https://ws1.mojedatovaschranka.cz/DS/DsManage"/>
     </port>
   </service>
 

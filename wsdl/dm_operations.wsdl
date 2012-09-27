@@ -8,17 +8,18 @@
         5. vytvoření hromadné zprávy (oběžníku) - CreateMultipleMessage   
         6. ověření zprávy - AuthenticateMessage 
      
-                         verze 2.9  
+                         verze 2.16  
 
    Změny:  
      4.2.2009 verze 0.1
-    20.3.2009 verze 1.0 - formální úpravy vyhovující WS-I Basic Profile
-     8.4.2009 verze 1.2 - změna názvů WSDL, rozložení operací mezi WSDL
-    16.4.2009 verze 1.3 - přidána DummyOperation pro navazování a udržování spojení
-     3.6.2009 verze 2.0 - novelaAuthne
-    1.10.2009 verze 2.5 - přidána WS CreateMultipleMessage
-    1.11.2009 verze 2.6 - komerční provoz
-    14.4.2010 verze 2.9 - přidána WS AuthenticateMessage                              
+    20.3.2009 verze 1.0  - formální úpravy vyhovující WS-I Basic Profile
+     8.4.2009 verze 1.2  - změna názvů WSDL, rozložení operací mezi WSDL
+    16.4.2009 verze 1.3  - přidána DummyOperation pro navazování a udržování spojení
+     3.6.2009 verze 2.0  - novela
+    1.10.2009 verze 2.5  - přidána WS CreateMultipleMessage
+    1.11.2009 verze 2.6  - komerční provoz
+    14.4.2010 verze 2.9  - přidána WS AuthenticateMessage                              
+    18.9.2010 verze 2.10 - změna URL v důsledku přechodu na Basic autentizaci
 ************************************************************************ -->
 
 <definitions name="ISDS_dmOperations" targetNamespace="http://isds.czechpoint.cz/v20" 
@@ -195,7 +196,7 @@
   <!-- ******************************************************************* -->
   <service name="dmOperationsWebService">
     <port name="dmOperationsPortType" binding="tns:dmOperationsBinding">
-      <soap:address location="https://www.mojedatovaschranka.cz/DS/dz"/>
+      <soap:address location="https://ws1.mojedatovaschranka.cz/DS/dz"/>
     </port>
   </service>
 
