@@ -440,7 +440,7 @@ class dmEnvelope(Model):
                  "dmLegalTitleLaw", "dmLegalTitleYear", "dmLegalTitleSect",
                  "dmLegalTitlePar", "dmLegalTitlePoint",
                  "dmPersonalDelivery", "dmAllowSubstDelivery", "dmOVM",
-                 "_dmType")
+                 "_dmType", "dmPublishOwnID")
   
   
 class dbOwnerInfo(Model):
