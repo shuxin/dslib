@@ -168,7 +168,9 @@ class SupplementaryMessageData(object):
     self.custom_data = json.dumps(data)
     
   def get_custom_data(self):
-    return json.loads(self.custom_data)
+    if self.custom_data:
+      return json.loads(self.custom_data)
+    return {}
     
 class SupplementaryMessageDataBinding(Binding):
 
