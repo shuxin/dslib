@@ -505,6 +505,12 @@ class Dispatcher(object):
     else:
       ok = False 
     return Reply(status, ok)
+  
+  def GetMessageAuthor(self, msgid):
+    reply = self.soap_client.service.GetMessageAuthor(msgid)    
+    status = self._extract_status(reply)
+    result = dict(userType=reply.userType, authorName=reply.authorName) 
+    return Reply(status, result)
 
     
 class Client(object):
@@ -546,6 +552,7 @@ class Client(object):
                           "AuthenticateMessage": "operations",
                           "MarkMessageAsDownloaded": "info",
                           "ConfirmDelivery": "info",
+                          "GetMessageAuthor": "info",
                           }
 
   dispatcher_name2config = {"info": {"wsdl_name": "dm_info.wsdl",

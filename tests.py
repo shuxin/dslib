@@ -285,6 +285,19 @@ def ConfirmDelivery():
       print reply.status
       print reply.data
       break
+    
+@active
+def GetMessageAuthor():  
+  for envelope in ds_client.GetListOfReceivedMessages().data:
+    print "*ID:", envelope.dmID
+    reply = ds_client.GetMessageAuthor(envelope.dmID)    
+    #print reply.status
+    print " userType", reply.data.get('userType')
+    auth_name = reply.data.get('authorName')
+    if auth_name:
+      print " authorName", auth_name.encode('utf-8')
+    
+    #break
 
 
 if __name__ == "__main__":
