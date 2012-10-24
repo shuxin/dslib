@@ -164,8 +164,8 @@ class Dispatcher(object):
     return status
 
 
-  def _handle_dmrecords_and_status_response(self, method):
-    reply = method()
+  def _handle_dmrecords_and_status_response(self, method, **kwargs):
+    reply = method(**kwargs)
     status = self._extract_status(reply)
     # the following is a hack around a bug in the suds library that
     # does not properly create a list when only one object is present
@@ -179,13 +179,13 @@ class Dispatcher(object):
         result = [models.Message(message) for message in messages]
     return Reply(status, result)
     
-  def GetListOfSentMessages(self):
+  def GetListOfSentMessages(self, **kwargs):
     method = self.soap_client.service.GetListOfSentMessages
-    return self._handle_dmrecords_and_status_response(method)
+    return self._handle_dmrecords_and_status_response(method, **kwargs)
 
-  def GetListOfReceivedMessages(self):
+  def GetListOfReceivedMessages(self, **kwargs):
     method = self.soap_client.service.GetListOfReceivedMessages
-    return self._handle_dmrecords_and_status_response(method)
+    return self._handle_dmrecords_and_status_response(method, **kwargs)
 
   def MessageEnvelopeDownload(self, msgid):
     reply = self.soap_client.service.MessageEnvelopeDownload(msgid)
