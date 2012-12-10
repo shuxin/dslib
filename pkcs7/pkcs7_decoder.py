@@ -24,6 +24,7 @@ from cStringIO import StringIO
 
 # dslib imports
 from pyasn1.codec.der import decoder
+from pyasn1.type.univ import OctetString
 from pyasn1 import error
 
 # local imports
@@ -32,7 +33,7 @@ from asn1_models.digest_info import *
 from asn1_models.TST_info import *
 
 
-class StringView(object):
+class StringView(object, OctetString):
   
   def __init__(self, string, start, end):
     self._string = string
