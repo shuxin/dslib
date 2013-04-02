@@ -163,14 +163,15 @@ def FindDataBox():
 @active
 def CreateMessage():
   envelope = models.dmEnvelope()
-  envelope.dbIDRecipient = "hjyaavk"
+  envelope.dbIDRecipient = "4nwahuq"
   envelope.dmAnnotation = "tohle je dalsi pokus posilany z pythonu"
   dmfile = models.dmFile()
   dmfile._dmMimeType = "text/plain"
   dmfile._dmFileMetaType = "main"
-  dmfile._dmFileDescr = "prilozeny_soubor.txt"
+  dmfile._dmFileDescr = "prilozeny_soubor_s/lomitkem/v/nazvu.txt"
   import base64
-  dmfile.dmEncodedContent = base64.standard_b64encode("tohle je pokusny text v pokusne priloze")
+  dmfile.dmEncodedContent = base64.standard_b64encode("tohle je pokusny text v"
+                                                      " pokusne priloze")
   dmfiles = [dmfile]
   reply = ds_client.CreateMessage(envelope, dmfiles)
   print reply.status
