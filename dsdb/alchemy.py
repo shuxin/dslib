@@ -49,29 +49,22 @@ class Binding(object):
   def __init__(self):
     self.table = None
 
-  def create_table(self, engine, metadata):
-    self.table = sal.Table(self.table_name, metadata, *self.get_columns())
-    self.create_indexes(engine)
-    metadata.create_all(engine)
+  def create_table(self, metadata):
+    self.table = sal.Table(self.table_name, metadata,
+                           *(self.get_columns() + self.get_indexes()))
 
   def bind_model(self, map_props=None):
     if self.model:
       if map_props is None:
         map_props = {}
       salorm.mapper(self.model, self.table, properties=map_props)
-
-  def create_indexes(self, engine):
-      for idx_name, idx_cols in self.indexes:
-          i = sal.Index(idx_name,
-                        *[getattr(self.table.c, col) for col in idx_cols])
-          insp = reflection.Inspector.from_engine(engine)
-          indexes = insp.get_indexes(self.table_name)
-          print indexes
-          for index in indexes:
-              if index.get('name') == idx_name:
-                  break
-          else:
-              i.create(engine)
+  
+  @classmethod
+  def get_indexes(cls):
+      index_list = []
+      for idx_name, idx_cols in cls.indexes:
+          index_list.append(sal.Index(idx_name, *idx_cols))
+      return index_list
 
 
 class MessageBinding(Binding):
@@ -282,8 +275,9 @@ class DSDatabase(AbstractDSDatabase):
     else:
       self.engine = sal.create_engine('sqlite:///:memory:', echo=self.DEBUG)
     for binding in self.bindings:
-      binding.create_table(self.engine, self.metadata)
-    self.mess_to_cert.create_table(self.engine, self.metadata)
+      binding.create_table(self.metadata)
+    self.mess_to_cert.create_table(self.metadata)
+    self.metadata.create_all(self.engine)
     for binding in self.bindings:
       if isinstance(binding, MessageBinding):
         props = {'certificate_data': salorm.relation(CertificateData,
