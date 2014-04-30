@@ -271,9 +271,9 @@ class DSDatabase(AbstractDSDatabase):
     """should open the database. Filename is the name of the sqlite db"""
     self.metadata = sal.MetaData()
     if filename:
-      self.engine = sal.create_engine('sqlite:///%s' % filename, echo=self.DEBUG)
+      self.engine = sal.create_engine('sqlite:///%s?check_same_thread=False' % filename, echo=self.DEBUG)
     else:
-      self.engine = sal.create_engine('sqlite:///:memory:', echo=self.DEBUG)
+      self.engine = sal.create_engine('sqlite:///:memory:?check_same_thread=False', echo=self.DEBUG)
     for binding in self.bindings:
       binding.create_table(self.metadata)
     self.mess_to_cert.create_table(self.metadata)
@@ -286,32 +286,24 @@ class DSDatabase(AbstractDSDatabase):
       else:
         props = None
       binding.bind_model(map_props=props)
-    self._new_session()
-
-  def _new_session(self):
-    self.session = salorm.sessionmaker(bind=self.engine)()
-    self._session_thread = thread.get_ident()
-
-  def _close_session(self):
-    self.session.close()
-    self.session = None
-
+    self.session = salorm.scoped_session(salorm.sessionmaker(bind=self.engine))
+  
   def close_database(self):
     sal.orm.clear_mappers()
     self.engine.dispose()
 
-  @thread_safe_session
+  # @thread_safe_session
   def list_message_ids(self):
     for id in self.session.query(Message.dmID).all():
       yield id[0]
 
-  @thread_safe_session
+  # @thread_safe_session
   def all_messages(self):
     for m in self.messages_between_dates(None, None):
       yield m
 
 
-  @thread_safe_session
+  # @thread_safe_session
   def store_message(self, message, raw_data=None,
                     typ=None, read_locally=None, custom_data=None):
     # translate type from string if needed
@@ -361,7 +353,7 @@ class DSDatabase(AbstractDSDatabase):
     # commit the data
     self.session.commit()
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_message(self, id, omit_relations=False):
     """return message by its id"""
     m, sup = self.session.query(Message, SupplementaryMessageData).\
@@ -378,7 +370,7 @@ class DSDatabase(AbstractDSDatabase):
       self.add_pkcs7_data(m)
     return m
 
-  @thread_safe_session
+  # @thread_safe_session
   def messages_between_dates(self, from_date, to_date,
                              message_type=None, add_pkcs7_data=False):
     """generator yielding messages with dmDeliveryTime between certain dates"""
@@ -401,7 +393,7 @@ class DSDatabase(AbstractDSDatabase):
         self.add_pkcs7_data(m)
       yield m
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_messages_between_dates(self, from_date, to_date,
                                  message_type=None, add_pkcs7_data=False):
     """return messages with dmDeliveryTime between certain dates"""
@@ -409,7 +401,7 @@ class DSDatabase(AbstractDSDatabase):
                                            add_pkcs7_data))
     return ret
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_messages_without_date(self, message_type=None, add_pkcs7_data=False):
     """return messages with empty dmDeliveryTime"""
     query = self.session.query(Message, SupplementaryMessageData).\
@@ -426,14 +418,14 @@ class DSDatabase(AbstractDSDatabase):
       ret.append(m)
     return ret
 
-  @thread_safe_session
+  # @thread_safe_session
   def add_pkcs7_data(self, message):
     p = PKCS7_data()
     p.certificates = [CertificateManager.get_certificate_from_der(c.get_der_data())\
                       for c in message.certificate_data]
     message.pkcs7_data = p
 
-  @thread_safe_session
+  # @thread_safe_session
   def add_delivery_info_data(self, mid, delivery_info, raw_data=None):
     """merges additional data from delivery info into the message
     and stores raw data into the database if given"""
@@ -448,22 +440,22 @@ class DSDatabase(AbstractDSDatabase):
       self.session.add(event)
     self.session.commit()
 
-  @thread_safe_session
+  # @thread_safe_session
   def has_message(self, id):
     assert self.session
     return bool(self.session.query(Message).get(int(id)))
 
-  @thread_safe_session
+  # @thread_safe_session
   def has_raw_data(self, id):
     assert self.session
     return bool(self.session.query(RawMessageData).get(int(id)))
 
-  @thread_safe_session
+  # @thread_safe_session
   def has_raw_delivery_info_data(self, id):
     assert self.session
     return bool(self.session.query(RawDeliveryInfoData).get(int(id)))
 
-  @thread_safe_session
+  # @thread_safe_session
   def remove_message(self, id):
     for m in self.session.query(Message).filter_by(dmID=int(id)):
       self.session.delete(m)
@@ -472,12 +464,12 @@ class DSDatabase(AbstractDSDatabase):
         self.session.delete(m)
     self.session.commit()
 
-  @thread_safe_session
+  # @thread_safe_session
   def store_raw_data(self, rd):
     self.session.add(rd)
     self.session.commit()
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_message_from_raw_data(self, id, client):
     rd = self.get_raw_data(id)
     if rd.message_type == MESSAGE_TYPE_RECEIVED:
@@ -487,42 +479,42 @@ class DSDatabase(AbstractDSDatabase):
     message = client.signature_to_message(rd.data, method)
     return message
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_delivery_info_from_raw_data(self, id, client):
     rd = self.get_raw_delivery_info_data(id)
     method = "GetSignedDeliveryInfo"
     di = client.signature_to_delivery_info(rd.data, method)
     return di
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_raw_data(self, id):
     rd = self.session.query(RawMessageData).get(id)
     if not rd:
       raise ValueError("RawMessageData with id '%d' does not exist." % id)
     return rd
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_raw_delivery_info_data(self, id):
     rd = self.session.query(RawDeliveryInfoData).get(id)
     if not rd:
       raise ValueError("RawDeliveryInfoData with id '%d' does not exist." % id)
     return rd
 
-  @thread_safe_session
+  # @thread_safe_session
   def store_supplementary_data(self, sd):
     self.session.add(sd)
     self.session.commit()
 
-  @thread_safe_session
+  # @thread_safe_session
   def has_supplementary_data(self, id):
     assert self.session
     return bool(self.session.query(SupplementaryMessageData).get(int(id)))
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_supplementary_data(self, id):
     return self.session.query(SupplementaryMessageData).get(int(id))
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_unique_senders(self):
     ret = list(self.session.query(Message.dbIDSender, Message.dmSender,
                                   Message.dmSenderAddress)\
@@ -531,7 +523,7 @@ class DSDatabase(AbstractDSDatabase):
                .distinct())
     return ret
 
-  @thread_safe_session
+  # @thread_safe_session
   def get_unique_recipients(self):
     ret = list(self.session.query(Message.dbIDRecipient, Message.dmRecipient,
                                   Message.dmRecipientAddress)\
@@ -540,7 +532,7 @@ class DSDatabase(AbstractDSDatabase):
                .distinct())
     return ret
 
-  @thread_safe_session
+  # @thread_safe_session
   def mark_messages_as_read_locally(self, mids):
     """mids is a list of message ids that should be marked as read_locally"""
     #ex = sal.update(SupplementaryMessageData)\
